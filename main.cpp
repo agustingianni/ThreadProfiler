@@ -24,7 +24,7 @@ void io_thread(DiskPool_mt *memory_pool) {
             }
         );
 
-        printf("Took %llu ms.\n", ret.second);
+        printf("Took %lld ms.\n", ret.second);
     }
 
     printf("Stopping IO thread.\n");
