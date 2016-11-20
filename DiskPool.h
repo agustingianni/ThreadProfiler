@@ -39,6 +39,7 @@ public:
         if (ftruncate(fd, m_size) == -1) {
             close(fd);
             std::cerr << "Failed to ftruncate file: " << strerror(errno) << std::endl;
+            abort();
         }
 
         m_address = reinterpret_cast<uint8_t *>(mmap(nullptr, m_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0));
