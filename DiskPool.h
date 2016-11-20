@@ -66,7 +66,7 @@ public:
     }
 
     // Flush to disk so we release physical pages.
-    void flush() {
+    void flush() const {
         if (madvise(m_address, m_size, MADV_DONTNEED)) {
             std::cerr << "Failed to flush memory: " << strerror(errno) << std::endl;
             abort();
