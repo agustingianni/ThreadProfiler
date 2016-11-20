@@ -76,3 +76,28 @@ BM_MemoryAllocation_malloc/threads:8                         7 ns         55 ns 
 BM_MemoryAllocation_malloc/threads:16                        6 ns         56 ns   12364480
 BM_MemoryAllocation_malloc/threads:32                        5 ns         57 ns   12604448
 ```
+
+# measure.h
+
+Small wrapper to measure execution time of arbitrary functions.
+
+**Usage**
+
+* Just include `measure.h` in your source file and use it to wrap what you want to measure.
+* You can specify the precision and the clock used, although I would not change the clock.
+* If the function you want to measure returns void, you need to wrap it on a lambda and make
+the lambda return a value.
+* If the function to measure is a method, use a lambda and capture the object.
+
+```
+void io_thread(DiskPool_mt *memory_pool) {
+    auto ret = measure<std::chrono::milliseconds>::execution(
+        [memory_pool] {
+            memory_pool->flush();
+            return 0;
+        }
+    );
+
+    printf("Took %ld ms.\n", ret.second);
+}
+```
