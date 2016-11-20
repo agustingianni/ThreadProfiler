@@ -62,7 +62,7 @@ public:
     }
 
     uint8_t *alloc(size_t size) {
-        return static_cast<T>(this)->alloc(size);
+        return static_cast<T *>(this)->allocImpl(size);
     }
 
     // Flush to disk so we release physical pages.
@@ -76,13 +76,17 @@ public:
 
 // Single thread disk pool. This does not implement any locking, use with care.
 class DiskPool_st : public DiskPool<DiskPool_st> {
+    // Let DiskPool access our private fields.
+    friend class DiskPool;
+
     size_t m_top;
 
 public:
     DiskPool_st(const std::string &filename, size_t size) : DiskPool<DiskPool_st>{filename, size}, m_top{0} {
     }
 
-    uint8_t *alloc(size_t size) {
+private:
+    uint8_t *allocImpl(size_t size) {
         auto tmp = m_top;
         m_top += size;
         return m_address + tmp;
@@ -91,13 +95,17 @@ public:
 
 // Thread safe disk pool. Uses atomic to handle accesses from multiple threads.
 class DiskPool_mt : public DiskPool<DiskPool_mt> {
+    // Let DiskPool access our private fields.
+    friend class DiskPool;
+
     std::atomic<size_t> m_top;
 
 public:
     DiskPool_mt(const std::string &filename, size_t size) : DiskPool<DiskPool_mt>{filename, size}, m_top{0} {
     }
 
-    uint8_t *alloc(size_t size) {
+private:
+    uint8_t *allocImpl(size_t size) {
         return m_address + m_top.fetch_add(size, std::memory_order_relaxed);
     }
 };
