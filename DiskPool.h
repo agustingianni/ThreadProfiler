@@ -18,10 +18,6 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#ifdef __APPLE__
-#include <mach/vm_statistics.h>
-#endif
-
 constexpr size_t KB(size_t size) { return size * 1024; }
 constexpr size_t MB(size_t size) { return KB(size) * 1024; }
 constexpr size_t GB(size_t size) { return MB(size) * 1024; }
@@ -45,22 +41,7 @@ public:
             std::cerr << "Failed to ftruncate file: " << strerror(errno) << std::endl;
         }
 
-        int flags = MAP_FILE | MAP_SHARED;
-        int prot = PROT_READ | PROT_WRITE;
-
-#ifdef MAP_HUGETLB
-        flags |= MAP_HUGETLB;
-#endif
-
-#ifdef MAP_ALIGNED_SUPER
-        flags |= MAP_ALIGNED_SUPER;
-#endif
-
-#ifdef VM_FLAGS_SUPERPAGE_SIZE_ANY
-        flags |= VM_FLAGS_SUPERPAGE_SIZE_ANY;
-#endif
-
-        m_address = reinterpret_cast<uint8_t *>(mmap(nullptr, m_size, prot, flags, fd, 0));
+        m_address = reinterpret_cast<uint8_t *>(mmap(nullptr, m_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0));
         if (m_address == MAP_FAILED) {
             close(fd);
             std::cerr << "Failed to map file: " << strerror(errno) << std::endl;
