@@ -22,56 +22,75 @@ constexpr size_t KB(size_t size) { return size * 1024; }
 constexpr size_t MB(size_t size) { return KB(size) * 1024; }
 constexpr size_t GB(size_t size) { return MB(size) * 1024; }
 
-template<typename T>
-class DiskPool {
-protected:
-    uint8_t *m_address;
-    size_t m_size;
-
-public:
-    DiskPool(const std::string &filename, size_t size) : m_size{size} {
+// Implement a memory map policy using 'mmap'.
+struct mmap_policy {
+    static void *map(const std::string &filename, size_t size) {
         auto fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
         if (fd == -1) {
             std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
             abort();
         }
 
-        if (ftruncate(fd, m_size) == -1) {
+        if (ftruncate(fd, size) == -1) {
             close(fd);
             std::cerr << "Failed to ftruncate file: " << strerror(errno) << std::endl;
             abort();
         }
 
-        m_address = reinterpret_cast<uint8_t *>(mmap(nullptr, m_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0));
-        if (m_address == MAP_FAILED) {
+        auto address = reinterpret_cast<uint8_t *>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0));
+        if (address == MAP_FAILED) {
             close(fd);
             std::cerr << "Failed to map file: " << strerror(errno) << std::endl;
             abort();
         }
 
         if (close(fd) != 0) {
+            unmap(address, size);
             std::cerr << "Failed to close file: " << strerror(errno) << std::endl;
             abort();
         }
+
+        return address;
     }
 
-    ~DiskPool() {
-        if (munmap(m_address, m_size) != 0) {
+    static void unmap(void *address, size_t size) {
+        if (munmap(address, size) != 0) {
             std::cerr << "Failed to unmap file: " << strerror(errno) << std::endl;
             abort();
-        };
+        }
     }
 
-    uint8_t *alloc(size_t size) {
-        return static_cast<T *>(this)->allocImpl(size);
-    }
-
-    // Flush to disk so we release physical pages.
-    void flush() const {
-        if (madvise(m_address, m_size, MADV_DONTNEED)) {
+    static void flush(void *address, size_t size) {
+        if (madvise(address, size, MADV_DONTNEED)) {
             std::cerr << "Failed to flush memory: " << strerror(errno) << std::endl;
             abort();
         }
+    }
+};
+
+// A 'DiskPool' is a named file backed memory allocator.
+template<typename BaseAllocator, typename FileMapPolicy = mmap_policy>
+class DiskPool {
+protected:
+    const std::string m_filename;
+    uint8_t *m_address;
+    size_t m_size;
+
+public:
+    DiskPool(const std::string &filename, size_t size) : m_filename{filename}, m_size{size} {
+        m_address = static_cast<uint8_t *>(FileMapPolicy::map(m_filename, m_size));
+    }
+
+    ~DiskPool() {
+        FileMapPolicy::unmap(m_address, m_size);
+    }
+
+    uint8_t *alloc(size_t size) {
+        return static_cast<BaseAllocator *>(this)->allocImpl(size);
+    }
+
+    void flush() const {
+        FileMapPolicy::flush(m_address, m_size);
     }
 };
 
@@ -110,6 +129,5 @@ private:
         return m_address + m_top.fetch_add(size, std::memory_order_relaxed);
     }
 };
-
 
 #endif //THREADPROFILER_DISKPOOL_H

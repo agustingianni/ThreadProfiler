@@ -5,6 +5,7 @@
 
 #include "DiskPool.h"
 #include "measure.h"
+#include "ThreadProfiler.h"
 
 std::atomic<int> stop{0};
 
