@@ -1,5 +1,16 @@
 # ThreadProfiler
-Collection of utilities used while developing multi-threaded code.
+
+**Description**
+
+Collection of utilities used while developing multi-threaded code ranging from time measuring routines to fast
+allocators. We try to keep things header only so in order to use any of the provided solutions you usually
+have to include the right header file in your code.
+
+We have provided a `vagrant` file so testing can be performed easily.
+
+# Allocator.h
+Example client for DiskPool.h that performs object allocations (but not deallocations). This is intended
+to be used as memory provider for sampling objects collected by the profiler.
 
 # DiskPool.h
 Memory allocator used quickly get memory from the system. It is lock free and backed by a file so anything you write to the memory will be saved.
@@ -7,87 +18,77 @@ The main purpose of this allocator is to provide memory to a profiler that needs
 
 It does not support freeing memory as it does not make any sense in the context where it is used.
 
-**Clone the repository**
+**Running with `vagrant`***
+
 ```
-➜  /tmp git clone git@github.com:agustingianni/ThreadProfiler.git
-Cloning into 'ThreadProfiler'...
-remote: Counting objects: 19, done.
-remote: Compressing objects: 100% (17/17), done.
-remote: Total 19 (delta 4), reused 11 (delta 2), pack-reused 0
-Receiving objects: 100% (19/19), 5.93 KiB | 0 bytes/s, done.
-Resolving deltas: 100% (4/4), done.
+localhost:~$ vagrant up
+localhost:~$ vagrant ssh
+ubuntu@ubuntu-xenial:~$ cd ThreadProfiler/build/
+ubuntu@ubuntu-xenial:~/ThreadProfiler/build$ ls -l test*
+-rwxr-xr-x 1 ubuntu ubuntu 970856 Nov 30 17:01 test_allocator
+-rwxr-xr-x 1 ubuntu ubuntu 976896 Nov 30 17:01 test_disk_pool
 ```
 
-**Install dependencies**
-```
-➜  /tmp brew install google-benchmark
-```
+**Dependencies**
+
+The headers do not have any dependencies but you do need to have `google-benchmark` in order to build and run the tests.
+ 
+If you are using `vagrant` everything should be resolved for you automatically.  
 
 **Compile**
 ```
-➜  /tmp cd ThreadProfiler
-➜  ThreadProfiler git:(master) mkdir build
-➜  ThreadProfiler git:(master) cd build
-➜  build git:(master) cmake ..
--- The C compiler identification is AppleClang 8.0.0.8000042
--- The CXX compiler identification is AppleClang 8.0.0.8000042
--- Check for working C compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc
--- Check for working C compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc -- works
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Detecting C compile features
--- Detecting C compile features - done
--- Check for working CXX compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++
--- Check for working CXX compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ -- works
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Detecting CXX compile features
--- Detecting CXX compile features - done
--- Configuring done
--- Generating done
--- Build files have been written to: /tmp/ThreadProfiler/build
-
-➜  build git:(master) make
-Scanning dependencies of target ThreadProfiler
-[ 33%] Building CXX object CMakeFiles/ThreadProfiler.dir/main.cpp.o
-[ 66%] Building CXX object CMakeFiles/ThreadProfiler.dir/DiskPool.cpp.o
-[100%] Linking CXX executable ThreadProfiler
-[100%] Built target ThreadProfiler
+$ cd ThreadProfiler
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
 ```
 
 **Run the benchmarks**
 ```
-➜  build git:(master) ./ThreadProfiler
-/Users/anon/workspace/ThreadProfiler/cmake-build-debug/ThreadProfiler
-Benchmark                                                         Time           CPU Iterations
-Run on (8 X 2500 MHz CPU s)
------------------------------------------------------------------------------------------------
-2016-11-30 03:19:36
-BM_MemoryAllocation_DiskPoolRaw/SingleThreaded                    2 ns          2 ns  358994610
-BM_MemoryAllocation_DiskPoolLock/Threaded/threads:1              23 ns         23 ns   31998391
-BM_MemoryAllocation_DiskPoolLock/Threaded/threads:2            2840 ns       3044 ns     224036
-BM_MemoryAllocation_DiskPoolLock/Threaded/threads:4            3263 ns       3420 ns     205736
-BM_MemoryAllocation_DiskPoolLock/Threaded/threads:8            3281 ns       3443 ns     206008
-BM_MemoryAllocation_DiskPoolLock/Threaded/threads:16           3275 ns       3434 ns     197824
-BM_MemoryAllocation_DiskPoolLock/Threaded/threads:32           3266 ns       3422 ns     198528
-BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:1           9 ns          9 ns   69723199
-BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:2          70 ns        140 ns    6619448
-BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:4         125 ns        500 ns    1858724
-BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:8         677 ns       5304 ns     173120
-BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:16        778 ns       7230 ns     142448
-BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:32        879 ns       9094 ns     141504
-BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:1             7 ns          7 ns   91669831
-BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:2            26 ns         52 ns   13613778
-BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:4            26 ns        105 ns    7132884
-BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:8            27 ns        215 ns    3571176
-BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:16           25 ns        214 ns    3480400
-BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:32            7 ns        193 ns    3390752
-BM_MemoryAllocation_malloc/threads:1                             34 ns         34 ns   20852883
-BM_MemoryAllocation_malloc/threads:2                             17 ns         34 ns   20739818
-BM_MemoryAllocation_malloc/threads:4                              9 ns         35 ns   20206540
-BM_MemoryAllocation_malloc/threads:8                              7 ns         57 ns   12690872
-BM_MemoryAllocation_malloc/threads:16                             6 ns         57 ns   12490528
-BM_MemoryAllocation_malloc/threads:32                             6 ns         57 ns   12205760
+$ ./test_allocator
+  Run on (8 X 2500 MHz CPU s)
+  2016-11-30 18:16:04
+  Benchmark                    Time           CPU Iterations
+  ----------------------------------------------------------
+  BM_ALLOC/threads:1           7 ns          7 ns   93923171
+  BM_ALLOC/threads:2          34 ns         68 ns   10084348
+  BM_ALLOC/threads:4          37 ns        147 ns    4461300
+  BM_ALLOC/threads:8          28 ns        215 ns    3131464
+  BM_ALLOC/threads:16         23 ns        220 ns    3607440
+  BM_ALLOC/threads:32         19 ns        220 ns    3405920
+  
+
+$ ./test_disk_pool
+  Run on (8 X 2500 MHz CPU s)
+  2016-11-30 18:16:35
+  Benchmark                                                         Time           CPU Iterations
+  -----------------------------------------------------------------------------------------------
+  BM_MemoryAllocation_DiskPoolRaw/SingleThreaded                    2 ns          2 ns  405083216
+  BM_MemoryAllocation_DiskPoolLock/Threaded/threads:1              20 ns         20 ns   34006996
+  BM_MemoryAllocation_DiskPoolLock/Threaded/threads:2            2841 ns       3026 ns     252904
+  BM_MemoryAllocation_DiskPoolLock/Threaded/threads:4            3276 ns       3434 ns     199416
+  BM_MemoryAllocation_DiskPoolLock/Threaded/threads:8            3127 ns       3295 ns     209504
+  BM_MemoryAllocation_DiskPoolLock/Threaded/threads:16           3157 ns       3326 ns     205152
+  BM_MemoryAllocation_DiskPoolLock/Threaded/threads:32           3247 ns       3415 ns     203488
+  BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:1           9 ns          9 ns   71797081
+  BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:2          89 ns        178 ns    5713936
+  BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:4         158 ns        633 ns    1206844
+  BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:8         590 ns       4406 ns     187976
+  BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:16        445 ns       4865 ns     183712
+  BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:32       1504 ns      14955 ns     143168
+  BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:1             7 ns          7 ns   89753946
+  BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:2            20 ns         41 ns   17576898
+  BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:4            24 ns         94 ns    7323056
+  BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:8            24 ns        182 ns    3359448
+  BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:16           21 ns        210 ns    4339472
+  BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:32           16 ns        197 ns    3200000
+  BM_MemoryAllocation_malloc/threads:1                             34 ns         34 ns   19975858
+  BM_MemoryAllocation_malloc/threads:2                             17 ns         34 ns   20609754
+  BM_MemoryAllocation_malloc/threads:4                             10 ns         38 ns   20154616
+  BM_MemoryAllocation_malloc/threads:8                              7 ns         55 ns   12378616
+  BM_MemoryAllocation_malloc/threads:16                             6 ns         57 ns   12634672
+  BM_MemoryAllocation_malloc/threads:32                             3 ns         56 ns   12425888
 ```
 
 # measure.h
