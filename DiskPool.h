@@ -163,6 +163,13 @@ public:
     void flush() const {
         FileMapPolicy::flush(m_address, m_size);
     }
+
+private:
+    // Avoid moves and copies.
+    DiskPool(const DiskPool &) = delete;
+    DiskPool &operator=(const DiskPool &) = delete;
+    DiskPool(DiskPool &&) = delete;
+    DiskPool &operator=(DiskPool &&) = delete;
 };
 
 // Define basic DiskPool implementations to be used by the client.
