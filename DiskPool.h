@@ -68,9 +68,80 @@ struct mmap_policy {
     }
 };
 
+// Simple implementation of a spin lock.
+class SpinLock {
+public:
+    void lock() {
+        while(m_lock.test_and_set(std::memory_order_acquire)) {
+        }
+    }
+
+    void unlock() {
+        m_lock.clear(std::memory_order_release);
+    }
+
+private:
+    std::atomic_flag m_lock = ATOMIC_FLAG_INIT;
+};
+
+// Implement a policy that increments the value non atomically.
+template <typename T = size_t> class RawIncrement {
+private:
+    T m_top{0};
+
+public:
+    T increment(T size) {
+        auto tmp = m_top;
+        m_top += size;
+        return m_top;
+    }
+};
+
+// Implement a policy that uses std::atomic to increment the value.
+template <typename T = size_t> class AtomicIncrement {
+private:
+    std::atomic<T> m_top{0};
+
+public:
+    T increment(T size) {
+        return m_top.fetch_add(size, std::memory_order_relaxed);
+    }
+};
+
+// Implement a policy that uses std::mutex to increment the value.
+template <typename T = size_t> class LockedIncrement {
+private:
+    std::mutex m_mutex;
+    T m_top{0};
+
+public:
+    T increment(T size) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto tmp = m_top;
+        m_top += size;
+        return tmp;
+    }
+};
+
+// Implement a policy that uses SpinLock to increment the value.
+template <typename T = size_t> class SpinLockIncrement {
+private:
+    SpinLock m_spinlock;
+    T m_top{0};
+
+public:
+    T increment(T size) {
+        m_spinlock.lock();
+        auto tmp = m_top;
+        m_top += size;
+        m_spinlock.unlock();
+        return tmp;
+    }
+};
+
 // A 'DiskPool' is a named file backed memory allocator.
-template<typename BaseAllocator, typename FileMapPolicy = mmap_policy>
-class DiskPool {
+template<typename IncrementPolicy = AtomicIncrement<size_t>, typename FileMapPolicy = mmap_policy>
+class DiskPool: public IncrementPolicy {
 protected:
     const std::string m_filename;
     uint8_t *m_address;
@@ -86,7 +157,7 @@ public:
     }
 
     uint8_t *alloc(size_t size) {
-        return static_cast<BaseAllocator *>(this)->allocImpl(size);
+        return m_address + IncrementPolicy::increment(size);
     }
 
     void flush() const {
@@ -94,40 +165,10 @@ public:
     }
 };
 
-// Single thread disk pool. This does not implement any locking, use with care.
-class DiskPool_st : public DiskPool<DiskPool_st> {
-    // Let DiskPool access our private fields.
-    friend class DiskPool;
-
-    size_t m_top;
-
-public:
-    DiskPool_st(const std::string &filename, size_t size) : DiskPool<DiskPool_st>{filename, size}, m_top{0} {
-    }
-
-private:
-    uint8_t *allocImpl(size_t size) {
-        auto tmp = m_top;
-        m_top += size;
-        return m_address + tmp;
-    }
-};
-
-// Thread safe disk pool. Uses atomic to handle accesses from multiple threads.
-class DiskPool_mt : public DiskPool<DiskPool_mt> {
-    // Let DiskPool access our private fields.
-    friend class DiskPool;
-
-    std::atomic<size_t> m_top;
-
-public:
-    DiskPool_mt(const std::string &filename, size_t size) : DiskPool<DiskPool_mt>{filename, size}, m_top{0} {
-    }
-
-private:
-    uint8_t *allocImpl(size_t size) {
-        return m_address + m_top.fetch_add(size, std::memory_order_relaxed);
-    }
-};
+// Define basic DiskPool implementations to be used by the client.
+using DiskPoolRaw = DiskPool<RawIncrement<size_t>>;
+using DiskPoolAtomic = DiskPool<AtomicIncrement<size_t>>;
+using DiskPoolLock = DiskPool<LockedIncrement<size_t>>;
+using DiskPoolSpinLock = DiskPool<SpinLockIncrement<size_t>>;
 
 #endif //THREADPROFILER_DISKPOOL_H

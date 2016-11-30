@@ -10,7 +10,7 @@
 std::atomic<int> stop{0};
 
 // Write all the data to disk.
-void io_thread(DiskPool_mt *memory_pool) {
+void io_thread(DiskPoolAtomic *memory_pool) {
     using precision = std::chrono::milliseconds;
 
     printf("Starting IO thread.\n");
@@ -32,26 +32,48 @@ void io_thread(DiskPool_mt *memory_pool) {
 }
 
 // Check the single thread performance.
-DiskPool_st memory_pool_st("/tmp/memory.log", GB(8));
-void BM_MemoryAllocation_DiskPool_st(benchmark::State &state, DiskPool_st *pool) {
+DiskPoolRaw memory_pool_raw("/tmp/memory.log", GB(8));
+void BM_MemoryAllocation_DiskPoolRaw(benchmark::State &state, DiskPoolRaw *pool) {
     while (state.KeepRunning()) {
         auto mem = pool->alloc(sizeof(int));
         benchmark::DoNotOptimize(mem);
     }
 }
 
-BENCHMARK_CAPTURE(BM_MemoryAllocation_DiskPool_st, SingleThreaded, &memory_pool_st);
+BENCHMARK_CAPTURE(BM_MemoryAllocation_DiskPoolRaw, SingleThreaded, &memory_pool_raw);
 
-static DiskPool_mt memory_pool_mt("/tmp/memory.log", GB(8));
-void BM_MemoryAllocation_DiskPool_mt(benchmark::State &state, DiskPool_mt *pool) {
-    DiskPool_st memory_pool("/tmp/memory.log", GB(8));
+// Check the multi-threaded locked performance.
+static DiskPoolLock memory_pool_lock("/tmp/memory.log", GB(8));
+void BM_MemoryAllocation_DiskPoolLock(benchmark::State &state, DiskPoolLock *pool) {
     while (state.KeepRunning()) {
         auto mem = pool->alloc(sizeof(int));
         benchmark::DoNotOptimize(mem);
     }
 }
 
-BENCHMARK_CAPTURE(BM_MemoryAllocation_DiskPool_mt, Threaded, &memory_pool_mt)->ThreadRange(1, 32);
+BENCHMARK_CAPTURE(BM_MemoryAllocation_DiskPoolLock, Threaded, &memory_pool_lock)->ThreadRange(1, 32);
+
+// Check the multi-threaded locked performance.
+static DiskPoolSpinLock memory_pool_spinlock("/tmp/memory.log", GB(8));
+void BM_MemoryAllocation_DiskPoolSpinLock(benchmark::State &state, DiskPoolSpinLock *pool) {
+    while (state.KeepRunning()) {
+        auto mem = pool->alloc(sizeof(int));
+        benchmark::DoNotOptimize(mem);
+    }
+}
+
+BENCHMARK_CAPTURE(BM_MemoryAllocation_DiskPoolSpinLock, Threaded, &memory_pool_spinlock)->ThreadRange(1, 32);
+
+// Check the multi-threaded atomic performance.
+static DiskPoolAtomic memory_pool_atomic("/tmp/memory.log", GB(8));
+void BM_MemoryAllocation_DiskPoolAtomic(benchmark::State &state, DiskPoolAtomic *pool) {
+    while (state.KeepRunning()) {
+        auto mem = pool->alloc(sizeof(int));
+        benchmark::DoNotOptimize(mem);
+    }
+}
+
+BENCHMARK_CAPTURE(BM_MemoryAllocation_DiskPoolAtomic, Threaded, &memory_pool_atomic)->ThreadRange(1, 32);
 
 void BM_MemoryAllocation_malloc(benchmark::State &state) {
     while (state.KeepRunning()) {

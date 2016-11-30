@@ -58,23 +58,36 @@ Scanning dependencies of target ThreadProfiler
 **Run the benchmarks**
 ```
 ➜  build git:(master) ./ThreadProfiler
+/Users/anon/workspace/ThreadProfiler/cmake-build-debug/ThreadProfiler
+Benchmark                                                         Time           CPU Iterations
 Run on (8 X 2500 MHz CPU s)
-2016-11-20 18:18:55
-Benchmark                                                    Time           CPU Iterations
-------------------------------------------------------------------------------------------
-BM_MemoryAllocation_DiskPool_st/SingleThreaded               2 ns          2 ns  392702466
-BM_MemoryAllocation_DiskPool_mt/Threaded/threads:1           7 ns          7 ns   89359801
-BM_MemoryAllocation_DiskPool_mt/Threaded/threads:2          30 ns         60 ns   12258658
-BM_MemoryAllocation_DiskPool_mt/Threaded/threads:4          36 ns        145 ns    5047772
-BM_MemoryAllocation_DiskPool_mt/Threaded/threads:8          28 ns        218 ns    3231128
-BM_MemoryAllocation_DiskPool_mt/Threaded/threads:16         25 ns        224 ns    3212512
-BM_MemoryAllocation_DiskPool_mt/Threaded/threads:32          8 ns        215 ns    3280896
-BM_MemoryAllocation_malloc/threads:1                        33 ns         33 ns   20863635
-BM_MemoryAllocation_malloc/threads:2                        17 ns         34 ns   20570388
-BM_MemoryAllocation_malloc/threads:4                         9 ns         35 ns   19849288
-BM_MemoryAllocation_malloc/threads:8                         7 ns         55 ns   12442760
-BM_MemoryAllocation_malloc/threads:16                        6 ns         56 ns   12364480
-BM_MemoryAllocation_malloc/threads:32                        5 ns         57 ns   12604448
+-----------------------------------------------------------------------------------------------
+2016-11-30 03:19:36
+BM_MemoryAllocation_DiskPoolRaw/SingleThreaded                    2 ns          2 ns  358994610
+BM_MemoryAllocation_DiskPoolLock/Threaded/threads:1              23 ns         23 ns   31998391
+BM_MemoryAllocation_DiskPoolLock/Threaded/threads:2            2840 ns       3044 ns     224036
+BM_MemoryAllocation_DiskPoolLock/Threaded/threads:4            3263 ns       3420 ns     205736
+BM_MemoryAllocation_DiskPoolLock/Threaded/threads:8            3281 ns       3443 ns     206008
+BM_MemoryAllocation_DiskPoolLock/Threaded/threads:16           3275 ns       3434 ns     197824
+BM_MemoryAllocation_DiskPoolLock/Threaded/threads:32           3266 ns       3422 ns     198528
+BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:1           9 ns          9 ns   69723199
+BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:2          70 ns        140 ns    6619448
+BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:4         125 ns        500 ns    1858724
+BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:8         677 ns       5304 ns     173120
+BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:16        778 ns       7230 ns     142448
+BM_MemoryAllocation_DiskPoolSpinLock/Threaded/threads:32        879 ns       9094 ns     141504
+BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:1             7 ns          7 ns   91669831
+BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:2            26 ns         52 ns   13613778
+BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:4            26 ns        105 ns    7132884
+BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:8            27 ns        215 ns    3571176
+BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:16           25 ns        214 ns    3480400
+BM_MemoryAllocation_DiskPoolAtomic/Threaded/threads:32            7 ns        193 ns    3390752
+BM_MemoryAllocation_malloc/threads:1                             34 ns         34 ns   20852883
+BM_MemoryAllocation_malloc/threads:2                             17 ns         34 ns   20739818
+BM_MemoryAllocation_malloc/threads:4                              9 ns         35 ns   20206540
+BM_MemoryAllocation_malloc/threads:8                              7 ns         57 ns   12690872
+BM_MemoryAllocation_malloc/threads:16                             6 ns         57 ns   12490528
+BM_MemoryAllocation_malloc/threads:32                             6 ns         57 ns   12205760
 ```
 
 # measure.h
