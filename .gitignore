@@ -27,3 +27,10 @@
 *.exe
 *.out
 *.app
+
+.DS_Store
+.idea/
+.vagrant/
+.vscode/
+build/
+cmake-build-debug/
