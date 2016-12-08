@@ -1,3 +1,7 @@
+//
+// Created by Agustin Gianni (agustin.gianni@gmail.com) on 11/30/16.
+//
+
 #include <thread>
 #include <iostream>
 
@@ -5,7 +9,6 @@
 
 #include "DiskPool.h"
 #include "measure.h"
-#include "ThreadProfiler.h"
 
 std::atomic<int> stop{0};
 

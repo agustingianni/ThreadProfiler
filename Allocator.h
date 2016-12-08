@@ -1,5 +1,5 @@
 //
-// Created by anon on 11/21/16.
+// Created by Agustin Gianni (agustin.gianni@gmail.com) on 11/21/16.
 //
 
 #ifndef THREADPROFILER_ALLOCATOR_H
@@ -10,6 +10,28 @@
 
 #include "DiskPool.h"
 
+// Create an instance of 'T' in a per thread fashion.
+template <typename T>
+struct PerThreadPolicy {
+    template <typename ... Ts>
+    static T &instance(Ts ... args) {
+        thread_local T g_instance(args ...);
+        return g_instance;
+    }
+};
+
+// Create an instance of 'T' in a per process fashion.
+template <typename T>
+struct PerProcessPolicy {
+    template <typename ... Ts>
+    static T &instance(Ts ... args) {
+        static T g_instance(args ...);
+        return g_instance;
+    }
+};
+
+// Create a memory allocator using a given 'MemoryPool'.
+template <typename MemoryPool, template <typename> class ThreadingPolicy>
 class Allocator {
 public:
     static uint8_t *alloc(size_t size) {
@@ -22,12 +44,12 @@ public:
     }
 
 private:
-    // Return an instance to the allocator. Thread safe in C++11.
-    static DiskPoolAtomic &instance() {
-        static DiskPoolAtomic g_allocator("/tmp/memory.log", GB(8));
-        return g_allocator;
+    // Return an instance to the memory pool according to 'ThreadingPolicy'.
+    static MemoryPool &instance() {
+        return ThreadingPolicy<MemoryPool>::instance(std::string("/tmp/memory.log"), GB(8));
     }
 
+    // Avoid explicit construction and destruction.
     Allocator() = delete;
     ~Allocator() = delete;
 

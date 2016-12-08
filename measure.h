@@ -1,5 +1,5 @@
 //
-// Created by anon on 11/19/16.
+// Created by Agustin Gianni (agustin.gianni@gmail.com) on 11/19/16.
 //
 
 #ifndef THREADPROFILER_MEASURE_H
