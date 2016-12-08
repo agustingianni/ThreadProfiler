@@ -25,7 +25,7 @@ constexpr size_t GB(size_t size) { return MB(size) * 1024; }
 
 // Implement a memory map policy using 'mmap'.
 struct mmap_policy {
-    static void *map(const std::string &filename, size_t size) {
+    static void *load(const std::string &filename, size_t size) {
         auto fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
         if (fd == -1) {
             std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
@@ -46,7 +46,7 @@ struct mmap_policy {
         }
 
         if (close(fd) != 0) {
-            unmap(address, size);
+            unload(address, size);
             std::cerr << "Failed to close file: " << strerror(errno) << std::endl;
             abort();
         }
@@ -54,7 +54,7 @@ struct mmap_policy {
         return address;
     }
 
-    static void unmap(void *address, size_t size) {
+    static void unload(void *address, size_t size) {
         if (munmap(address, size) != 0) {
             std::cerr << "Failed to unmap file: " << strerror(errno) << std::endl;
             abort();
@@ -150,11 +150,11 @@ protected:
 
 public:
     DiskPool(const std::string &filename, size_t size) : m_filename{filename}, m_size{size} {
-        m_address = static_cast<uint8_t *>(FileMapPolicy::map(m_filename, m_size));
+        m_address = static_cast<uint8_t *>(FileMapPolicy::load(m_filename, m_size));
     }
 
     ~DiskPool() {
-        FileMapPolicy::unmap(m_address, m_size);
+        FileMapPolicy::unload(m_address, m_size);
     }
 
     uint8_t *alloc(size_t size) {
