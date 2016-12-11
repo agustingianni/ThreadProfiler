@@ -43,12 +43,21 @@ public:
         return instance().alloc(sizeof(T));
     }
 
-private:
+    static uint8_t *alloc(MemoryPool &pool, size_t size) {
+        return pool.alloc(size);
+    }
+
+    template <typename T>
+    static uint8_t *alloc(MemoryPool &pool) {
+        return pool.alloc(sizeof(T));
+    }
+
     // Return an instance to the memory pool according to 'ThreadingPolicy'.
     static MemoryPool &instance() {
         return ThreadingPolicy<MemoryPool>::instance("/tmp/memory.log", GB(8));
     }
 
+private:
     // Avoid explicit construction and destruction.
     Allocator() = delete;
     ~Allocator() = delete;

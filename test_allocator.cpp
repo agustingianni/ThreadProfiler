@@ -7,41 +7,35 @@
 #include "Allocator.h"
 #include "DiskPool.h"
 
-void BM_ALLOC_TEMPLATED_SIZE_PER_PROCESS(benchmark::State &state) {
+template <typename DISK_POOL_TYPE, template <typename> class THREADING_POLICY> void BM_ALLOC_IMPLICIT_POOL(benchmark::State &state) {
+    using CustomAllocator = Allocator<DISK_POOL_TYPE, THREADING_POLICY>;
     while (state.KeepRunning()) {
-        auto mem = Allocator<DiskPoolAtomic, PerProcessPolicy>::alloc<size_t>();
+        auto mem = CustomAllocator::alloc(sizeof(size_t));
         benchmark::DoNotOptimize(mem);
     }
 }
 
-BENCHMARK(BM_ALLOC_TEMPLATED_SIZE_PER_PROCESS)->ThreadRange(1, 32);
+BENCHMARK_TEMPLATE(BM_ALLOC_IMPLICIT_POOL, DiskPoolAtomic, PerProcessPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_IMPLICIT_POOL, DiskPoolLock, PerProcessPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_IMPLICIT_POOL, DiskPoolSpinLock, PerProcessPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_IMPLICIT_POOL, DiskPoolAtomic, PerThreadPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_IMPLICIT_POOL, DiskPoolLock, PerThreadPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_IMPLICIT_POOL, DiskPoolSpinLock, PerThreadPolicy)->ThreadRange(1, 16);
 
-void BM_ALLOC_EXPLICIT_SIZE_PER_PROCESS(benchmark::State &state) {
+template <typename DISK_POOL_TYPE, template <typename> class THREADING_POLICY> void BM_ALLOC_EXPLICIT_POOL(benchmark::State &state) {
+    using CustomAllocator = Allocator<DISK_POOL_TYPE, THREADING_POLICY>;
+    auto &pool = CustomAllocator::instance();
     while (state.KeepRunning()) {
-        auto mem = Allocator<DiskPoolAtomic, PerProcessPolicy>::alloc(sizeof(size_t));
+        auto mem = CustomAllocator::alloc(pool, sizeof(size_t));
         benchmark::DoNotOptimize(mem);
     }
 }
 
-BENCHMARK(BM_ALLOC_EXPLICIT_SIZE_PER_PROCESS)->ThreadRange(1, 32);
-
-void BM_ALLOC_TEMPLATED_SIZE_PER_THREAD(benchmark::State &state) {
-    while (state.KeepRunning()) {
-        auto mem = Allocator<DiskPoolAtomic, PerThreadPolicy>::alloc<size_t>();
-        benchmark::DoNotOptimize(mem);
-    }
-}
-
-BENCHMARK(BM_ALLOC_TEMPLATED_SIZE_PER_THREAD)->ThreadRange(1, 32);
-
-void BM_ALLOC_EXPLICIT_SIZE_PER_THREAD(benchmark::State &state) {
-    while (state.KeepRunning()) {
-        auto mem = Allocator<DiskPoolAtomic, PerThreadPolicy>::alloc(sizeof(size_t));
-        benchmark::DoNotOptimize(mem);
-    }
-}
-
-BENCHMARK(BM_ALLOC_EXPLICIT_SIZE_PER_THREAD)->ThreadRange(1, 32);
-
+BENCHMARK_TEMPLATE(BM_ALLOC_EXPLICIT_POOL, DiskPoolAtomic, PerProcessPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_EXPLICIT_POOL, DiskPoolLock, PerProcessPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_EXPLICIT_POOL, DiskPoolSpinLock, PerProcessPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_EXPLICIT_POOL, DiskPoolAtomic, PerThreadPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_EXPLICIT_POOL, DiskPoolLock, PerThreadPolicy)->ThreadRange(1, 16);
+BENCHMARK_TEMPLATE(BM_ALLOC_EXPLICIT_POOL, DiskPoolSpinLock, PerThreadPolicy)->ThreadRange(1, 16);
 
 BENCHMARK_MAIN()
