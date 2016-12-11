@@ -46,7 +46,7 @@ public:
 private:
     // Return an instance to the memory pool according to 'ThreadingPolicy'.
     static MemoryPool &instance() {
-        return ThreadingPolicy<MemoryPool>::instance(std::string("/tmp/memory.log"), GB(8));
+        return ThreadingPolicy<MemoryPool>::instance("/tmp/memory.log", GB(8));
     }
 
     // Avoid explicit construction and destruction.

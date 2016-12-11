@@ -6,7 +6,6 @@
 #define THREADPROFILER_DISKPOOL_H
 
 #include <atomic>
-#include <string>
 #include <mutex>
 #include <cstddef>
 #include <cassert>
@@ -25,8 +24,8 @@ constexpr size_t GB(size_t size) { return MB(size) * 1024; }
 
 // Implement a memory map policy using 'mmap'.
 struct mmap_policy {
-    static void *load(const std::string &filename, size_t size) {
-        auto fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
+    static void *load(const char *filename, size_t size) {
+        auto fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0644);
         if (fd == -1) {
             std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
             abort();
@@ -144,13 +143,12 @@ public:
 template<typename IncrementPolicy = AtomicIncrement<size_t>, typename FileMapPolicy = mmap_policy>
 class DiskPool: public IncrementPolicy {
 protected:
-    const std::string m_filename;
     uint8_t *m_address;
     size_t m_size;
 
 public:
-    DiskPool(const std::string &filename, size_t size) : m_filename{filename}, m_size{size} {
-        m_address = static_cast<uint8_t *>(FileMapPolicy::load(m_filename, m_size));
+    DiskPool(const char *filename, size_t size) : m_size{size} {
+        m_address = static_cast<uint8_t *>(FileMapPolicy::load(filename, m_size));
     }
 
     ~DiskPool() {
